@@ -1,0 +1,31 @@
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Node
+**/node_modules/
+**/.next/
+**/.cache/
+**/dist/
+
+# .NET
+**/bin/
+**/obj/
+**/out/
+**/publish/
+
+# Env & Config
+**/.env*
+!**/.env.example
+**/appsettings.Development.json
+
+# Logs
+*.log
+logs/
+TestResults/
+coverage/
+
+# Docker
+**/docker-compose.override.yml

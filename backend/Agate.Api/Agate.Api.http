@@ -1,0 +1,6 @@
+@Agate.Api_HostAddress = http://localhost:5168
+
+GET {{Agate.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
