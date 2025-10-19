@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -10,10 +9,10 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Basit demo girişi — ileride API entegrasyonu gelecek
+    // Basit örnek için hard-coded login
     if (email === "sarah@agate.com" && password === "password123") {
       router.push("/dashboard");
     } else {
@@ -22,56 +21,37 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-200 p-6">
-      <div className="w-full max-w-md bg-white rounded-xl shadow-xl p-8">
-        {/* Logo */}
-        <div className="flex flex-col items-center mb-8">
-          <Image
-            src="/next.svg"
-            alt="Agate CMS Logo"
-            width={150}
-            height={50}
-            className="mb-2 dark:invert"
-          />
-          <h1 className="text-2xl font-bold text-gray-800 text-center">
-            Agate Campaign Management System
-          </h1>
-        </div>
+    <div className="flex min-h-screen items-center justify-center bg-gray-50">
+      <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-8">
+        <h1 className="text-2xl font-bold text-center mb-6 text-gray-800">
+          Agate Campaign Management System
+        </h1>
 
-        {/* Form */}
-        <form onSubmit={handleLogin} className="space-y-5">
+        <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Email Address
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Email
             </label>
             <input
               type="email"
-              id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="e.g. sarah@agate.com"
               className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              placeholder="Enter your email"
               required
             />
           </div>
 
           <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Password
             </label>
             <input
               type="password"
-              id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
               className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              placeholder="Enter your password"
               required
             />
           </div>
@@ -82,16 +62,15 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            className="w-full py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition"
+            className="w-full py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition"
           >
             Login
           </button>
         </form>
 
-        {/* Footer */}
-        <div className="mt-6 text-xs text-center text-gray-500">
+        <p className="mt-6 text-xs text-gray-500 text-center">
           © 2025 Agate Ltd. All rights reserved.
-        </div>
+        </p>
       </div>
     </div>
   );
