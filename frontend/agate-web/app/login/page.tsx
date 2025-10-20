@@ -12,7 +12,7 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Basit örnek için hard-coded login
+    // Basit örnek için hard-coded login BUNU YAZMAZSAK GIRIS OLMAZ HABERINIZ OLSUN !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     if (email === "sarah@agate.com" && password === "password123") {
       router.push("/dashboard");
     } else {
