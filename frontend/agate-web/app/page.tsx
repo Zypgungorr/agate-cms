@@ -3,21 +3,33 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { login, saveAuthToken } from "../lib/auth";
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+    setError("");
 
-    // Basit demo girişi — ileride API entegrasyonu gelecek
-    if (email === "sarah@agate.com" && password === "password123") {
+    try {
+      const response = await login({ email, password });
+      
+      // Save token to localStorage
+      saveAuthToken(response.token);
+      
+      // Redirect to dashboard
       router.push("/dashboard");
-    } else {
+    } catch (err) {
       setError("Invalid email or password");
+      console.error("Login error:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -82,9 +94,10 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            className="w-full py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition"
+            disabled={loading}
+            className="w-full py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Login
+            {loading ? "Logging in..." : "Login"}
           </button>
         </form>
 
