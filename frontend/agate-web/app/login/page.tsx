@@ -11,11 +11,34 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
 
-    // Basit örnek için hard-coded login BUNU YAZMAZSAK GIRIS OLMAZ HABERINIZ OLSUN !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    if (email === "sarah@agate.com" && password === "password123") {
+    try {
+      // Call the actual login API
+      const response = await fetch('http://localhost:5135/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email,
+          password: password,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Login failed');
+      }
+
+      const data = await response.json();
+      
+      // Save token to localStorage
+      localStorage.setItem('token', data.token);
+      
+      // Redirect to dashboard
       router.push("/dashboard");
-    } else {
+    } catch (err) {
+      console.error('Login error:', err);
       setError("Invalid email or password");
     }
   };
@@ -36,7 +59,7 @@ export default function LoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full px-4 py-2 border text-black rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
               placeholder="Enter your email"
               required
             />
@@ -50,7 +73,7 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full px-4 py-2 border rounded-md text-black focus:ring-2 focus:ring-blue-500 focus:outline-none"
               placeholder="Enter your password"
               required
             />

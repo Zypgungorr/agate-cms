@@ -18,7 +18,11 @@ public class ConceptNote
     [Required]
     public string Content { get; set; } = string.Empty;
     
+    [Required]
+    public string Status { get; set; } = "Ideas"; // Ideas, InReview, Approved, Archived
+    
     public string[]? Tags { get; set; }
+    public int Priority { get; set; } = 1; // 1=Low, 2=Medium, 3=High
     public bool IsShared { get; set; } = true;
     
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

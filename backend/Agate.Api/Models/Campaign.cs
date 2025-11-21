@@ -69,6 +69,19 @@ public class BudgetLine
     [Required]
     public string Item { get; set; } = string.Empty;
     
+    [Required]
+    public string Category { get; set; } = "Other"; // Creative, Media, Production, Talent, Other
+    
+    [Required]
+    public string Type { get; set; } = "Planned"; // Planned, Actual
+    
     public decimal Amount { get; set; }
+    public decimal PlannedAmount { get; set; } = 0; // For comparison
+    
+    public string? Description { get; set; }
+    public string? Vendor { get; set; } // Supplier/Agency name
+    
     public DateOnly BookedAt { get; set; } = DateOnly.FromDateTime(DateTime.Now);
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }
