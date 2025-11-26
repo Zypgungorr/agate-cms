@@ -212,7 +212,10 @@ public class AgateDbContext : DbContext
             entity.Property(cn => cn.AuthorId).HasColumnName("author_id");
             entity.Property(cn => cn.Title).HasColumnName("title");
             entity.Property(cn => cn.Content).HasColumnName("content");
+            entity.Property(cn => cn.Status).HasColumnName("status")
+                  .HasColumnType("text").HasDefaultValue("Ideas");
             entity.Property(cn => cn.Tags).HasColumnName("tags");
+            entity.Property(cn => cn.Priority).HasColumnName("priority").HasDefaultValue(1);
             entity.Property(cn => cn.IsShared).HasColumnName("is_shared").HasDefaultValue(true);
             entity.Property(cn => cn.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
             entity.Property(cn => cn.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now()");
@@ -236,8 +239,17 @@ public class AgateDbContext : DbContext
             entity.Property(bl => bl.CampaignId).HasColumnName("campaign_id");
             entity.Property(bl => bl.AdvertId).HasColumnName("advert_id");
             entity.Property(bl => bl.Item).HasColumnName("item");
+            entity.Property(bl => bl.Category).HasColumnName("category")
+                  .HasColumnType("text").HasDefaultValue("Other");
+            entity.Property(bl => bl.Type).HasColumnName("type")
+                  .HasColumnType("text").HasDefaultValue("Planned");
             entity.Property(bl => bl.Amount).HasColumnName("amount").HasPrecision(14, 2);
+            entity.Property(bl => bl.PlannedAmount).HasColumnName("planned_amount").HasPrecision(14, 2).HasDefaultValue(0);
+            entity.Property(bl => bl.Description).HasColumnName("description");
+            entity.Property(bl => bl.Vendor).HasColumnName("vendor");
             entity.Property(bl => bl.BookedAt).HasColumnName("booked_at");
+            entity.Property(bl => bl.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
+            entity.Property(bl => bl.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now()");
             
             entity.HasOne(bl => bl.Campaign)
                   .WithMany(c => c.BudgetLines)

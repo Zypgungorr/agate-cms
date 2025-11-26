@@ -18,6 +18,13 @@ builder.Services.AddDbContext<AgateDbContext>(options =>
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
+// Business services
+builder.Services.AddScoped<ICampaignService, CampaignService>();
+builder.Services.AddScoped<IClientService, ClientService>();
+builder.Services.AddScoped<IAdvertService, AdvertService>();
+builder.Services.AddScoped<IConceptNoteService, ConceptNoteService>();
+builder.Services.AddScoped<IBudgetService, BudgetService>();
+
 // JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var secretKey = Encoding.UTF8.GetBytes(jwtSettings["SecretKey"]!);
@@ -45,7 +52,7 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "https://localhost:3000") // Next.js default ports
+        policy.WithOrigins("http://localhost:3000", "https://localhost:3000", "http://localhost:3001", "http://localhost:3002") // Next.js ports
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
