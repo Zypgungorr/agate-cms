@@ -11,10 +11,12 @@ namespace Agate.Api.Controllers;
 public class ClientsController : ControllerBase
 {
     private readonly IClientService _clientService;
+    private readonly IStaffService _staffService;
 
-    public ClientsController(IClientService clientService)
+    public ClientsController(IClientService clientService, IStaffService staffService)
     {
         _clientService = clientService;
+        _staffService = staffService;
     }
 
     [HttpGet]
@@ -99,5 +101,49 @@ public class ClientsController : ControllerBase
         {
             return BadRequest(new { message = ex.Message });
         }
+    }
+
+    // Client staff contact management endpoints
+    
+    // GET: api/clients/{id}/staff
+    [HttpGet("{id}/staff")]
+    public async Task<ActionResult<IEnumerable<StaffListDto>>> GetClientStaff(Guid id)
+    {
+        var staff = await _staffService.GetClientStaffContactsAsync(id);
+        return Ok(staff);
+    }
+
+    // POST: api/clients/{id}/staff
+    [HttpPost("{id}/staff")]
+    public async Task<IActionResult> AssignStaffToClient(Guid id, [FromBody] AssignStaffToClientDto assignDto)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        try
+        {
+            await _staffService.AssignStaffToClientAsync(id, assignDto);
+            return NoContent();
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    // DELETE: api/clients/{clientId}/staff/{staffId}
+    [HttpDelete("{clientId}/staff/{staffId}")]
+    public async Task<IActionResult> RemoveStaffFromClient(Guid clientId, Guid staffId)
+    {
+        var result = await _staffService.RemoveStaffFromClientAsync(clientId, staffId);
+        
+        if (!result)
+        {
+            return NotFound();
+        }
+
+        return NoContent();
     }
 }

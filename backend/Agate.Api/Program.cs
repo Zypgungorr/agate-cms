@@ -24,6 +24,12 @@ builder.Services.AddScoped<IClientService, ClientService>();
 builder.Services.AddScoped<IAdvertService, AdvertService>();
 builder.Services.AddScoped<IConceptNoteService, ConceptNoteService>();
 builder.Services.AddScoped<IBudgetService, BudgetService>();
+builder.Services.AddScoped<IStaffService, StaffService>();
+
+// AI services
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<IAiService, AiService>();
+builder.Services.AddScoped<IPdfService, PdfService>();
 
 // JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("Jwt");
