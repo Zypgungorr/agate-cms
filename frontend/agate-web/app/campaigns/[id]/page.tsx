@@ -10,6 +10,7 @@ import {
   CAMPAIGN_STATUS_LABELS,
   CAMPAIGN_STATUSES
 } from '../../../lib/campaigns';
+import CampaignStaffAssignment from '../../../components/CampaignStaffAssignment';
 
 interface CampaignDetailPageProps {
   params: Promise<{
@@ -228,6 +229,9 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
 
         {/* Sidebar */}
         <div className="space-y-6">
+          {/* Campaign Team - Moved to top for better visibility */}
+          <CampaignStaffAssignment campaignId={campaign.id} />
+
           {/* Budget Info */}
           <div className="bg-white shadow rounded-lg p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Budget</h3>
