@@ -164,8 +164,8 @@ export default function ReportsPage() {
                 id="campaign-select"
                 value={selectedCampaignId}
                 onChange={(e) => setSelectedCampaignId(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
                 <option value="">-- Select a campaign --</option>
                 {campaigns.map((campaign) => (
                   <option key={campaign.id} value={campaign.id}>
@@ -187,8 +187,8 @@ export default function ReportsPage() {
                       id="analysis-type"
                       value={analysisType}
                       onChange={(e) => setAnalysisType(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    >
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
                       <option value="performance">Performance Analysis</option>
                       <option value="ideas">Ideas & Suggestions</option>
                       <option value="optimization">Optimization</option>
@@ -204,7 +204,7 @@ export default function ReportsPage() {
                       value={additionalContext}
                       onChange={(e) => setAdditionalContext(e.target.value)}
                       rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       placeholder="Add any specific context or questions..."
                     />
                   </div>
@@ -212,8 +212,8 @@ export default function ReportsPage() {
                   <button
                     onClick={handleCampaignSuggestion}
                     disabled={loading || !selectedCampaignId}
-                    className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                  >
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
                     {loading ? 'Generating Analysis...' : 'Generate Campaign Analysis'}
                   </button>
                 </div>
