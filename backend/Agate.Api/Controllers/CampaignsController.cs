@@ -12,10 +12,12 @@ namespace Agate.Api.Controllers;
 public class CampaignsController : ControllerBase
 {
     private readonly ICampaignService _campaignService;
+    private readonly IStaffService _staffService;
 
-    public CampaignsController(ICampaignService campaignService)
+    public CampaignsController(ICampaignService campaignService, IStaffService staffService)
     {
         _campaignService = campaignService;
+        _staffService = staffService;
     }
 
     [HttpGet]
@@ -115,5 +117,49 @@ public class CampaignsController : ControllerBase
     {
         var campaigns = await _campaignService.GetCampaignsAsync(status);
         return Ok(campaigns);
+    }
+
+    // Campaign staff management endpoints
+    
+    // GET: api/campaigns/{id}/staff
+    [HttpGet("{id}/staff")]
+    public async Task<ActionResult<IEnumerable<StaffListDto>>> GetCampaignStaff(Guid id)
+    {
+        var staff = await _staffService.GetCampaignStaffAsync(id);
+        return Ok(staff);
+    }
+
+    // POST: api/campaigns/{id}/staff
+    [HttpPost("{id}/staff")]
+    public async Task<IActionResult> AssignStaffToCampaign(Guid id, [FromBody] AssignStaffToCampaignDto assignDto)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        try
+        {
+            await _staffService.AssignStaffToCampaignAsync(id, assignDto);
+            return NoContent();
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    // DELETE: api/campaigns/{campaignId}/staff/{staffId}
+    [HttpDelete("{campaignId}/staff/{staffId}")]
+    public async Task<IActionResult> RemoveStaffFromCampaign(Guid campaignId, Guid staffId)
+    {
+        var result = await _staffService.RemoveStaffFromCampaignAsync(campaignId, staffId);
+        
+        if (!result)
+        {
+            return NotFound();
+        }
+
+        return NoContent();
     }
 }

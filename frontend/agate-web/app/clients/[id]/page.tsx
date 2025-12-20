@@ -10,6 +10,7 @@ import {
   type Client,
   type CampaignListItem
 } from '../../../lib/campaigns';
+import ClientStaffContacts from '../../../components/ClientStaffContacts';
 
 interface ClientDetailPageProps {
   params: Promise<{
@@ -288,6 +289,9 @@ export default function ClientDetailPage({ params }: ClientDetailPageProps) {
 
         {/* Sidebar Stats */}
         <div className="space-y-6">
+          {/* Client Staff Contacts - Moved to top for better visibility */}
+          <ClientStaffContacts clientId={client.id} />
+
           <div className="bg-white shadow rounded-lg p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Statistics</h3>
             
