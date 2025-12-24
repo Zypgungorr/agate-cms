@@ -284,11 +284,11 @@ export default function EditCampaignPage({ params }: EditCampaignPageProps) {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
               <div>
                 <span className="text-gray-500">Estimated:</span>
-                <p className="font-semibold">{formatCurrency(campaign.estimatedBudget)}</p>
+                <p className="font-semibold text-gray-700">{formatCurrency(campaign.estimatedBudget)}</p>
               </div>
               <div>
                 <span className="text-gray-500">Actual Cost:</span>
-                <p className="font-semibold">{formatCurrency(campaign.actualCost)}</p>
+                <p className="font-semibold text-gray-700">{formatCurrency(campaign.actualCost)}</p>
               </div>
               <div>
                 <span className="text-gray-500">Variance:</span>

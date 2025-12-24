@@ -1,8 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
+using System.Diagnostics;
 using Agate.Api.Services;
 using Agate.Api.DTOs;
+using Agate.Api.Data;
+using Agate.Api.Models;
 
 namespace Agate.Api.Controllers;
 
@@ -14,18 +17,51 @@ public class AIAssistantController : ControllerBase
     private readonly IAiService _aiService;
     private readonly IPdfService _pdfService;
     private readonly ICampaignService _campaignService;
+    private readonly AgateDbContext _context;
     private readonly ILogger<AIAssistantController> _logger;
 
     public AIAssistantController(
         IAiService aiService, 
         IPdfService pdfService,
         ICampaignService campaignService,
+        AgateDbContext context,
         ILogger<AIAssistantController> logger)
     {
         _aiService = aiService;
         _pdfService = pdfService;
         _campaignService = campaignService;
+        _context = context;
         _logger = logger;
+    }
+
+    private async Task LogAiRequestAsync(string route, Guid? campaignId, int latencyMs, int statusCode)
+    {
+        try
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            Guid? userId = null;
+            if (userIdClaim != null && Guid.TryParse(userIdClaim, out var parsedUserId))
+            {
+                userId = parsedUserId;
+            }
+
+            var auditLog = new AiAuditLog
+            {
+                UserId = userId,
+                Route = route,
+                CampaignId = campaignId,
+                LatencyMs = latencyMs,
+                StatusCode = statusCode,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.AiAuditLogs.Add(auditLog);
+            await _context.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to log AI request audit");
+        }
     }
 
     /// <summary>
@@ -35,8 +71,13 @@ public class AIAssistantController : ControllerBase
     public async Task<ActionResult<CampaignSuggestionResponseDto>> GetCampaignSuggestion(
         [FromBody] CampaignSuggestionRequestDto request)
     {
+        var stopwatch = Stopwatch.StartNew();
+        int statusCode = 200;
+        
         if (!ModelState.IsValid)
         {
+            statusCode = 400;
+            await LogAiRequestAsync("/ai/campaign-suggestion", request.CampaignId, (int)stopwatch.ElapsedMilliseconds, statusCode);
             return BadRequest(ModelState);
         }
 
@@ -77,19 +118,31 @@ public class AIAssistantController : ControllerBase
                 // Don't fail the request if saving fails
             }
 
+            stopwatch.Stop();
+            await LogAiRequestAsync("/ai/campaign-suggestion", request.CampaignId, (int)stopwatch.ElapsedMilliseconds, statusCode);
+            
             return Ok(response);
         }
         catch (ArgumentException ex)
         {
+            statusCode = 400;
+            stopwatch.Stop();
+            await LogAiRequestAsync("/ai/campaign-suggestion", request.CampaignId, (int)stopwatch.ElapsedMilliseconds, statusCode);
             return BadRequest(new { message = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
+            statusCode = 500;
+            stopwatch.Stop();
+            await LogAiRequestAsync("/ai/campaign-suggestion", request.CampaignId, (int)stopwatch.ElapsedMilliseconds, statusCode);
             _logger.LogError(ex, "Invalid operation error generating campaign suggestion");
             return StatusCode(500, new { message = ex.Message });
         }
         catch (Exception ex)
         {
+            statusCode = 500;
+            stopwatch.Stop();
+            await LogAiRequestAsync("/ai/campaign-suggestion", request.CampaignId, (int)stopwatch.ElapsedMilliseconds, statusCode);
             _logger.LogError(ex, "Error generating campaign suggestion: {Error}", ex.ToString());
             return StatusCode(500, new { message = $"An error occurred while generating campaign suggestion: {ex.Message}" });
         }
@@ -102,8 +155,13 @@ public class AIAssistantController : ControllerBase
     public async Task<ActionResult<CreativeIdeaResponseDto>> GetCreativeIdea(
         [FromBody] CreativeIdeaRequestDto request)
     {
+        var stopwatch = Stopwatch.StartNew();
+        int statusCode = 200;
+        
         if (!ModelState.IsValid)
         {
+            statusCode = 400;
+            await LogAiRequestAsync("/ai/creative-idea", request.CampaignId, (int)stopwatch.ElapsedMilliseconds, statusCode);
             return BadRequest(ModelState);
         }
 
@@ -147,19 +205,31 @@ public class AIAssistantController : ControllerBase
                 // Don't fail the request if saving fails
             }
 
+            stopwatch.Stop();
+            await LogAiRequestAsync("/ai/creative-idea", request.CampaignId, (int)stopwatch.ElapsedMilliseconds, statusCode);
+            
             return Ok(response);
         }
         catch (ArgumentException ex)
         {
+            statusCode = 400;
+            stopwatch.Stop();
+            await LogAiRequestAsync("/ai/creative-idea", request.CampaignId, (int)stopwatch.ElapsedMilliseconds, statusCode);
             return BadRequest(new { message = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
+            statusCode = 500;
+            stopwatch.Stop();
+            await LogAiRequestAsync("/ai/creative-idea", request.CampaignId, (int)stopwatch.ElapsedMilliseconds, statusCode);
             _logger.LogError(ex, "Invalid operation error generating creative idea");
             return StatusCode(500, new { message = ex.Message });
         }
         catch (Exception ex)
         {
+            statusCode = 500;
+            stopwatch.Stop();
+            await LogAiRequestAsync("/ai/creative-idea", request.CampaignId, (int)stopwatch.ElapsedMilliseconds, statusCode);
             _logger.LogError(ex, "Error generating creative idea: {Error}", ex.ToString());
             return StatusCode(500, new { message = $"An error occurred while generating creative idea: {ex.Message}" });
         }
@@ -172,11 +242,17 @@ public class AIAssistantController : ControllerBase
     public async Task<IActionResult> ExportCampaignSuggestionPdf(
         [FromBody] CampaignSuggestionResponseDto response)
     {
+        var stopwatch = Stopwatch.StartNew();
+        int statusCode = 200;
+        
         try
         {
             var campaign = await _campaignService.GetCampaignByIdAsync(response.CampaignId);
             if (campaign == null)
             {
+                statusCode = 404;
+                stopwatch.Stop();
+                await LogAiRequestAsync("/ai/campaign-suggestion/export-pdf", response.CampaignId, (int)stopwatch.ElapsedMilliseconds, statusCode);
                 return NotFound(new { message = "Campaign not found" });
             }
 
@@ -186,11 +262,17 @@ public class AIAssistantController : ControllerBase
                 campaign.ClientName
             );
 
+            stopwatch.Stop();
+            await LogAiRequestAsync("/ai/campaign-suggestion/export-pdf", response.CampaignId, (int)stopwatch.ElapsedMilliseconds, statusCode);
+
             var fileName = $"Campaign_Report_{campaign.Title.Replace(" ", "_")}_{DateTime.Now:yyyyMMdd}.pdf";
             return File(pdfBytes, "application/pdf", fileName);
         }
         catch (Exception ex)
         {
+            statusCode = 500;
+            stopwatch.Stop();
+            await LogAiRequestAsync("/ai/campaign-suggestion/export-pdf", response.CampaignId, (int)stopwatch.ElapsedMilliseconds, statusCode);
             _logger.LogError(ex, "Error generating PDF for campaign suggestion");
             return StatusCode(500, new { message = $"Error generating PDF: {ex.Message}" });
         }
@@ -203,11 +285,17 @@ public class AIAssistantController : ControllerBase
     public async Task<IActionResult> ExportCreativeIdeaPdf(
         [FromBody] CreativeIdeaResponseDto response)
     {
+        var stopwatch = Stopwatch.StartNew();
+        int statusCode = 200;
+        
         try
         {
             var campaign = await _campaignService.GetCampaignByIdAsync(response.CampaignId);
             if (campaign == null)
             {
+                statusCode = 404;
+                stopwatch.Stop();
+                await LogAiRequestAsync("/ai/creative-idea/export-pdf", response.CampaignId, (int)stopwatch.ElapsedMilliseconds, statusCode);
                 return NotFound(new { message = "Campaign not found" });
             }
 
@@ -217,11 +305,17 @@ public class AIAssistantController : ControllerBase
                 campaign.ClientName
             );
 
+            stopwatch.Stop();
+            await LogAiRequestAsync("/ai/creative-idea/export-pdf", response.CampaignId, (int)stopwatch.ElapsedMilliseconds, statusCode);
+
             var fileName = $"Creative_Ideas_{campaign.Title.Replace(" ", "_")}_{DateTime.Now:yyyyMMdd}.pdf";
             return File(pdfBytes, "application/pdf", fileName);
         }
         catch (Exception ex)
         {
+            statusCode = 500;
+            stopwatch.Stop();
+            await LogAiRequestAsync("/ai/creative-idea/export-pdf", response.CampaignId, (int)stopwatch.ElapsedMilliseconds, statusCode);
             _logger.LogError(ex, "Error generating PDF for creative idea");
             return StatusCode(500, new { message = $"Error generating PDF: {ex.Message}" });
         }

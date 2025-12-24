@@ -117,7 +117,9 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
-        </div>        {/* Recent Activity */}
+        </div>
+
+        {/* Recent Activity */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Recent Campaigns */}
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
@@ -131,8 +133,8 @@ export default function DashboardPage() {
                 </Link>
               </div>
             </div>
-          <div className="p-6">
-            {campaigns.length === 0 ? (
+            <div className="p-6">
+              {campaigns.length === 0 ? (
               <p className="text-gray-500 text-center py-8 text-sm">No campaigns yet</p>
             ) : (
               <div className="space-y-4">
@@ -159,8 +161,8 @@ export default function DashboardPage() {
                 ))}
               </div>
             )}
+            </div>
           </div>
-        </div>
 
           {/* Recent Clients */}
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
@@ -174,8 +176,8 @@ export default function DashboardPage() {
                 </Link>
               </div>
             </div>
-          <div className="p-6">
-            {clients.length === 0 ? (
+            <div className="p-6">
+              {clients.length === 0 ? (
               <p className="text-gray-500 text-center py-8 text-sm">No clients yet</p>
             ) : (
               <div className="space-y-4">
@@ -198,9 +200,9 @@ export default function DashboardPage() {
                 ))}
               </div>
             )}
+            </div>
           </div>
         </div>
-      </div>
 
         {/* Quick Actions */}
         <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
@@ -254,7 +256,7 @@ export default function DashboardPage() {
             </Link>
           </div>
         </div>
-    </div>
+      </div>
     </div>
   );
 }

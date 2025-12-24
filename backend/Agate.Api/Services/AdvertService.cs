@@ -46,6 +46,7 @@ public class AdvertService : IAdvertService
             .Select(a => new AdvertListDto
             {
                 Id = a.Id,
+                CampaignId = a.CampaignId,
                 Title = a.Title,
                 CampaignTitle = a.Campaign.Title,
                 Channel = a.Channel,
