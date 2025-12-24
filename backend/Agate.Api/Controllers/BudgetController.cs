@@ -149,6 +149,23 @@ public class BudgetController : ControllerBase
     }
 
     /// <summary>
+    /// Get total planned amount for a specific advert
+    /// </summary>
+    [HttpGet("advert/{advertId}/planned")]
+    public async Task<ActionResult<decimal>> GetPlannedAmountForAdvert(Guid advertId)
+    {
+        try
+        {
+            var plannedAmount = await _budgetService.GetPlannedAmountForAdvertAsync(advertId);
+            return Ok(new { advertId, plannedAmount });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Get budget summary for a campaign
     /// </summary>
     [HttpGet("summary/{campaignId}")]

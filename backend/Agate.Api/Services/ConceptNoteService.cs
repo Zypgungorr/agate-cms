@@ -39,9 +39,11 @@ public class ConceptNoteService : IConceptNoteService
                 CampaignName = cn.Campaign.Title,
                 AuthorName = cn.Author.FullName,
                 Title = cn.Title,
+                Content = cn.Content,
                 Status = cn.Status,
                 Tags = cn.Tags,
                 Priority = cn.Priority,
+                IsShared = cn.IsShared,
                 CreatedAt = cn.CreatedAt,
                 UpdatedAt = cn.UpdatedAt
             })
@@ -92,9 +94,11 @@ public class ConceptNoteService : IConceptNoteService
                 CampaignName = cn.Campaign.Title,
                 AuthorName = cn.Author.FullName,
                 Title = cn.Title,
+                Content = cn.Content,
                 Status = cn.Status,
                 Tags = cn.Tags,
                 Priority = cn.Priority,
+                IsShared = cn.IsShared,
                 CreatedAt = cn.CreatedAt,
                 UpdatedAt = cn.UpdatedAt
             })
