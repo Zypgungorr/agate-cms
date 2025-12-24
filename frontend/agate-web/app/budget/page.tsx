@@ -76,6 +76,7 @@ export default function BudgetPage() {
 
   const loadCampaigns = async () => {
     try {
+      console.log('Loading campaigns...');
       const response = await fetch('http://localhost:5135/api/campaigns', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -84,10 +85,14 @@ export default function BudgetPage() {
       
       if (response.ok) {
         const data = await response.json();
+        console.log('Campaigns loaded:', data);
         setCampaigns(data);
-        if (data.length > 0) {
+        if (data.length > 0 && !selectedCampaign) {
+          console.log('Auto-selecting first campaign:', data[0].id);
           setSelectedCampaign(data[0].id);
         }
+      } else {
+        console.error('Failed to load campaigns:', response.status);
       }
     } catch (error) {
       console.error('Error loading campaigns:', error);
@@ -100,6 +105,8 @@ export default function BudgetPage() {
     try {
       setLoading(true);
       
+      console.log('Loading budget data for campaign:', selectedCampaign);
+      
       // Load budget summary
       const summaryResponse = await fetch(`http://localhost:5135/api/budget/summary/${selectedCampaign}`, {
         headers: {
@@ -107,9 +114,19 @@ export default function BudgetPage() {
         }
       });
       
+      console.log('Budget summary response:', summaryResponse.status);
+      
       if (summaryResponse.ok) {
         const summaryData = await summaryResponse.json();
+        console.log('Budget summary data:', summaryData);
         setBudgetSummary(summaryData);
+      } else if (summaryResponse.status === 404) {
+        console.log('No budget summary found - campaign has no budget items yet');
+        setBudgetSummary(null);
+      } else {
+        const errorText = await summaryResponse.text();
+        console.error('Budget summary error:', errorText);
+        setBudgetSummary(null);
       }
 
       // Load budget lines
@@ -119,12 +136,21 @@ export default function BudgetPage() {
         }
       });
 
+      console.log('Budget lines response:', linesResponse.status);
+
       if (linesResponse.ok) {
         const linesData = await linesResponse.json();
+        console.log('Budget lines data:', linesData);
         setBudgetLines(linesData);
+      } else {
+        const errorText = await linesResponse.text();
+        console.error('Budget lines error:', errorText);
+        setBudgetLines([]);
       }
     } catch (error) {
       console.error('Error loading budget data:', error);
+      setBudgetSummary(null);
+      setBudgetLines([]);
     } finally {
       setLoading(false);
     }
@@ -364,6 +390,23 @@ export default function BudgetPage() {
         </>
       )}
 
+      {selectedCampaign && !budgetSummary && !loading && (
+        <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
+          <div className="text-6xl mb-4">💰</div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">No Budget Data Yet</h3>
+          <p className="text-gray-600 mb-6">This campaign doesn't have any budget items. Start by adding one!</p>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium inline-flex items-center"
+          >
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Add First Budget Item
+          </button>
+        </div>
+      )}
+
       {!selectedCampaign && (
         <div className="text-center py-12">
           <div className="text-6xl mb-4">📊</div>
@@ -412,15 +455,22 @@ function CreateBudgetItemModal({ campaignId, categories, onClose, onSuccess }: {
   useEffect(() => {
     const loadAdverts = async () => {
       try {
+        console.log('Loading adverts for campaign:', campaignId);
         const response = await fetch(`http://localhost:5135/api/adverts/campaign/${campaignId}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
         });
         
+        console.log('Adverts response status:', response.status);
+        
         if (response.ok) {
           const data = await response.json();
+          console.log('Adverts data:', data);
           setAdverts(data);
+        } else {
+          const errorText = await response.text();
+          console.error('Adverts error:', errorText);
         }
       } catch (error) {
         console.error('Error loading adverts:', error);
@@ -584,7 +634,7 @@ function CreateBudgetItemModal({ campaignId, categories, onClose, onSuccess }: {
                   min="0"
                   value={formData.plannedAmount}
                   onChange={(e) => setFormData({...formData, plannedAmount: parseFloat(e.target.value) || 0})}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border text-black border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="0.00"
                 />
               </div>

@@ -75,6 +75,7 @@ public record UpdateAdvertDto
 public record AdvertListDto
 {
     public Guid Id { get; init; }
+    public Guid CampaignId { get; init; }
     public string Title { get; init; } = string.Empty;
     public string CampaignTitle { get; init; } = string.Empty;
     public string Channel { get; init; } = string.Empty;
