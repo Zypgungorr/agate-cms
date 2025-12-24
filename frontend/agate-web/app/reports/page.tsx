@@ -187,7 +187,7 @@ export default function ReportsPage() {
                       id="analysis-type"
                       value={analysisType}
                       onChange={(e) => setAnalysisType(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border  border-gray-300 rounded-lg text-black focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       >
                       <option value="performance">Performance Analysis</option>
                       <option value="ideas">Ideas & Suggestions</option>
@@ -260,13 +260,13 @@ export default function ReportsPage() {
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <span className="text-sm text-gray-600">Budget Utilization:</span>
-                            <span className="ml-2 font-semibold">
+                            <span className="ml-2 font-semibold text-gray-700">
                               {campaignSuggestionResult.performanceAnalysis.budgetUtilization.toFixed(1)}%
                             </span>
                           </div>
                           <div>
                             <span className="text-sm text-gray-600">Advert Completion Rate:</span>
-                            <span className="ml-2 font-semibold">
+                            <span className="ml-2 font-semibold text-gray-700">
                               {campaignSuggestionResult.performanceAnalysis.advertCompletionRate}%
                             </span>
                           </div>
@@ -364,7 +364,7 @@ export default function ReportsPage() {
                       id="request-type"
                       value={requestType}
                       onChange={(e) => setRequestType(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     >
                       <option value="creative">Creative Ideas</option>
                       <option value="concept">Concept</option>
@@ -382,7 +382,7 @@ export default function ReportsPage() {
                       value={brief}
                       onChange={(e) => setBrief(e.target.value)}
                       rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       placeholder="Describe what you're looking for..."
                     />
                   </div>
@@ -397,7 +397,7 @@ export default function ReportsPage() {
                         type="text"
                         value={targetAudience}
                         onChange={(e) => setTargetAudience(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         placeholder="e.g., 25-45 professionals"
                       />
                     </div>
@@ -410,7 +410,7 @@ export default function ReportsPage() {
                         id="tone"
                         value={tone}
                         onChange={(e) => setTone(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       >
                         <option value="professional">Professional</option>
                         <option value="casual">Casual</option>

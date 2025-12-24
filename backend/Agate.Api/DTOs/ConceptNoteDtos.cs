@@ -26,9 +26,11 @@ public class ConceptNoteListDto
     public string CampaignName { get; set; } = string.Empty;
     public string AuthorName { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
+    public string Content { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
     public string[]? Tags { get; set; }
     public int Priority { get; set; }
+    public bool IsShared { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }

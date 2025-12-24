@@ -92,17 +92,41 @@ public class CampaignsController : ControllerBase
         }
     }
 
+    // Kampanya silme - tüm ilişkili kayıtları (adverts, concept notes, budget lines) da siler
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteCampaign(Guid id)
     {
-        var result = await _campaignService.DeleteCampaignAsync(id);
-        
-        if (!result)
+        try
         {
-            return NotFound();
-        }
+            var result = await _campaignService.DeleteCampaignAsync(id);
+            
+            if (!result)
+            {
+                return NotFound(new { message = "Campaign not found" });
+            }
 
-        return NoContent();
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            // Detaylı hata loglama - inner exception'ları da dahil et
+            Console.WriteLine($"Error deleting campaign {id}: {ex.Message}");
+            
+            var innerEx = ex.InnerException;
+            var innerMessages = new List<string>();
+            while (innerEx != null)
+            {
+                innerMessages.Add(innerEx.Message);
+                Console.WriteLine($"Inner exception: {innerEx.Message}");
+                innerEx = innerEx.InnerException;
+            }
+            
+            return StatusCode(500, new { 
+                message = "An error occurred while deleting the campaign", 
+                details = ex.Message,
+                innerExceptions = innerMessages
+            });
+        }
     }
 
     [HttpGet("client/{clientId}")]

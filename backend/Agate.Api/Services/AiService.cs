@@ -43,8 +43,13 @@ public class AiService : IAiService
                 throw new ArgumentException("Campaign not found");
             }
 
+            // Calculate actual cost from budget lines with Type = "Actual"
+            var actualCost = await _context.BudgetLines
+                .Where(bl => bl.CampaignId == campaign.Id && bl.Type == "Actual")
+                .SumAsync(bl => (decimal?)bl.Amount) ?? 0;
+
             // Build prompt based on analysis type
-            var prompt = BuildCampaignAnalysisPrompt(campaign, request.AnalysisType, request.AdditionalContext);
+            var prompt = BuildCampaignAnalysisPrompt(campaign, actualCost, request.AnalysisType, request.AdditionalContext);
 
             // Call AI API
             var aiResponseJson = await GenerateTextAsync(prompt, new Dictionary<string, object>
@@ -56,7 +61,7 @@ public class AiService : IAiService
 
             // Parse JSON response directly
             var budgetUtilization = campaign.EstimatedBudget > 0 
-                ? (campaign.ActualCost / campaign.EstimatedBudget) * 100 
+                ? (actualCost / campaign.EstimatedBudget) * 100 
                 : 0;
 
             var completionRate = campaign.Adverts.Count > 0
@@ -493,10 +498,10 @@ public class AiService : IAiService
 }";
     }
 
-    private string BuildCampaignAnalysisPrompt(Campaign campaign, string? analysisType, string? additionalContext)
+    private string BuildCampaignAnalysisPrompt(Campaign campaign, decimal actualCost, string? analysisType, string? additionalContext)
     {
         var budgetUtilization = campaign.EstimatedBudget > 0 
-            ? (campaign.ActualCost / campaign.EstimatedBudget) * 100 
+            ? (actualCost / campaign.EstimatedBudget) * 100 
             : 0;
 
         var completionRate = campaign.Adverts.Count > 0
@@ -511,8 +516,8 @@ Campaign Data:
 - Status: {campaign.Status}
 - Description: {campaign.Description ?? "N/A"}
 - Budget: {campaign.EstimatedBudget:C}
-- Actual Cost: {campaign.ActualCost:C}
-- Budget Variance: {campaign.ActualCost - campaign.EstimatedBudget:C}
+- Actual Cost: {actualCost:C}
+- Budget Variance: {actualCost - campaign.EstimatedBudget:C}
 - Start Date: {campaign.StartDate?.ToString() ?? "N/A"}
 - End Date: {campaign.EndDate?.ToString() ?? "N/A"}
 - Total Adverts: {campaign.Adverts.Count}

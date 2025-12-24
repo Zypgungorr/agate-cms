@@ -6,6 +6,7 @@ import { use } from 'react';
 // Types
 interface Advert {
   id: string;
+  campaignId: string;
   title: string;
   campaignTitle: string;
   channel: string;
@@ -86,6 +87,11 @@ export default function AdvertsPage() {
       throw new Error(`API call failed: ${response.statusText} - ${errorText}`);
     }
 
+    // DELETE request genellikle 204 No Content dönüyor - boş response
+    if (response.status === 204 || options.method === 'DELETE') {
+      return null;
+    }
+
     return response.json();
   };
 
@@ -121,8 +127,10 @@ export default function AdvertsPage() {
 
   const loadUsers = async () => {
     try {
-      // Assuming there's a users endpoint - if not, we'll handle this differently
-      setUsers([]); // For now, empty array
+      console.log('Loading staff/users...');
+      const response = await apiCall('/api/staff');
+      console.log('Loaded users/staff:', response);
+      setUsers(response);
     } catch (error) {
       console.error('Error loading users:', error);
     }
@@ -193,30 +201,81 @@ export default function AdvertsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this advert?')) return;
+    // İlgili advert'i bul
+    const advert = adverts.find(a => a.id === id);
+    if (!advert) return;
+
+    // Detaylı uyarı mesajı
+    const warningMessage = `Are you sure you want to delete "${advert.title}"?\n\n` +
+      `⚠️ WARNING: This action cannot be undone!\n\n` +
+      `This will permanently delete:\n` +
+      `• The advert\n` +
+      `• All related budget lines\n\n` +
+      `Type "DELETE" to confirm:`;
+
+    const userInput = prompt(warningMessage);
+    
+    if (userInput !== 'DELETE') {
+      if (userInput !== null) {
+        alert('Deletion cancelled. You must type "DELETE" to confirm.');
+      }
+      return;
+    }
 
     try {
       await apiCall(`/api/adverts/${id}`, { method: 'DELETE' });
       await loadAdverts();
+      alert(`Advert "${advert.title}" has been successfully deleted.`);
     } catch (error) {
       console.error('Error deleting advert:', error);
-      alert('Error deleting advert');
+      
+      let errorMessage = 'Error deleting advert';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      alert(`Failed to delete advert: ${errorMessage}`);
     }
   };
 
   const handleEdit = (advert: Advert) => {
     setEditingAdvert(advert);
-    setFormData({
-      title: advert.title,
-      campaignId: '', // We'll need the campaign ID from the full advert data
-      channel: advert.channel,
-      status: advert.status,
-      cost: advert.cost,
-      publishStart: advert.publishStart?.split('T')[0] || '',
-      publishEnd: '',
-      ownerId: '',
-      notes: ''
-    });
+    
+    // Load advert details to get ownerId
+    const loadAdvertDetails = async () => {
+      try {
+        const response = await apiCall(`/api/adverts/${advert.id}`);
+        console.log('Advert details for edit:', response);
+        
+        setFormData({
+          title: response.title,
+          campaignId: response.campaignId || '',
+          channel: response.channel,
+          status: response.status,
+          cost: response.cost,
+          publishStart: response.publishStart?.split('T')[0] || '',
+          publishEnd: response.publishEnd?.split('T')[0] || '',
+          ownerId: response.ownerId || '',
+          notes: response.notes || ''
+        });
+      } catch (error) {
+        console.error('Error loading advert details:', error);
+        // Fallback to basic data
+        setFormData({
+          title: advert.title,
+          campaignId: '',
+          channel: advert.channel,
+          status: advert.status,
+          cost: advert.cost,
+          publishStart: advert.publishStart?.split('T')[0] || '',
+          publishEnd: '',
+          ownerId: '',
+          notes: ''
+        });
+      }
+    };
+    
+    loadAdvertDetails();
     setShowCreateModal(true);
   };
 
@@ -477,6 +536,24 @@ export default function AdvertsPage() {
                       onChange={(e) => setFormData({ ...formData, publishEnd: e.target.value })}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Assign Owner (Optional)
+                    </label>
+                    <select
+                      value={formData.ownerId}
+                      onChange={(e) => setFormData({ ...formData, ownerId: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">Unassigned</option>
+                      {users.map((user) => (
+                        <option key={user.id} value={user.id}>
+                          {user.fullName}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               </div>

@@ -12,6 +12,7 @@ public interface IBudgetService
     Task<BudgetLineDto> CreateBudgetLineAsync(CreateBudgetLineDto createDto);
     Task<BudgetLineDto?> UpdateBudgetLineAsync(long id, UpdateBudgetLineDto updateDto);
     Task<bool> DeleteBudgetLineAsync(long id);
+    Task<decimal> GetPlannedAmountForAdvertAsync(Guid advertId);
 
     // Budget Analysis
     Task<BudgetSummaryDto?> GetBudgetSummaryAsync(Guid campaignId);

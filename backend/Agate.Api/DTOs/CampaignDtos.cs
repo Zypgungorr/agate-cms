@@ -73,5 +73,7 @@ public class CampaignListDto
     public decimal ActualCost { get; set; }
     public decimal BudgetVariance => ActualCost - EstimatedBudget;
     public int TotalAdverts { get; set; }
+    public int CompletedAdverts { get; set; }
+    public int ActiveAdverts { get; set; }
     public DateTime UpdatedAt { get; set; }
 }

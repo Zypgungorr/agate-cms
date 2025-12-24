@@ -42,10 +42,11 @@ public class AdvertService : IAdvertService
         }
 
         var adverts = await query
-            .OrderByDescending(a => a.UpdatedAt)
+            .OrderBy(a => a.PublishStart)
             .Select(a => new AdvertListDto
             {
                 Id = a.Id,
+                CampaignId = a.CampaignId,
                 Title = a.Title,
                 CampaignTitle = a.Campaign.Title,
                 Channel = a.Channel,
@@ -160,15 +161,46 @@ public class AdvertService : IAdvertService
         return await GetAdvertByIdAsync(id);
     }
 
+    // Advert silme işlemi - ilişkili budget line'ları da siler
     public async Task<bool> DeleteAdvertAsync(Guid id)
     {
-        var advert = await _context.Adverts.FindAsync(id);
-        if (advert == null) return false;
+        // Transaction kullanarak güvenli silme
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        
+        try
+        {
+            // Advert var mı kontrol et
+            var advertExists = await _context.Adverts.AnyAsync(a => a.Id == id);
+            if (!advertExists)
+            {
+                await transaction.RollbackAsync();
+                return false;
+            }
 
-        _context.Adverts.Remove(advert);
-        await _context.SaveChangesAsync();
+            // 1. İlişkili budget line'ları sil
+            var budgetLinesCount = await _context.Database
+                .ExecuteSqlRawAsync("DELETE FROM budget_lines WHERE advert_id = {0}", id);
+            Console.WriteLine($"Deleted {budgetLinesCount} budget lines for advert {id}");
 
-        return true;
+            // 2. Advert'i sil
+            var advertCount = await _context.Database
+                .ExecuteSqlRawAsync("DELETE FROM adverts WHERE id = {0}", id);
+            Console.WriteLine($"Deleted advert {id}");
+
+            // Transaction'ı commit et
+            await transaction.CommitAsync();
+            
+            return true;
+        }
+        catch (Exception ex)
+        {
+            // Hata durumunda rollback yap
+            await transaction.RollbackAsync();
+            
+            Console.WriteLine($"Error in DeleteAdvertAsync: {ex.Message}");
+            Console.WriteLine($"Inner exception: {ex.InnerException?.Message}");
+            throw;
+        }
     }
 
     public async Task<IEnumerable<AdvertListDto>> GetAdvertsByCampaignAsync(Guid campaignId)
