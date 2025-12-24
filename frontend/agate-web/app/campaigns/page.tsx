@@ -56,7 +56,28 @@ export default function CampaignsPage({}: CampaignsPageProps) {
   };
 
   const handleDeleteCampaign = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this campaign?')) {
+    // İlgili kampanyayı bul ve detaylarını al
+    const campaign = campaigns.find(c => c.id === id);
+    if (!campaign) return;
+
+    // Detaylı uyarı mesajı oluştur
+    const warningMessage = `Are you sure you want to delete "${campaign.title}"?\n\n` +
+      `⚠️ WARNING: This action cannot be undone!\n\n` +
+      `This will permanently delete:\n` +
+      `• The campaign\n` +
+      `• ${campaign.totalAdverts} advert${campaign.totalAdverts !== 1 ? 's' : ''}\n` +
+      `• All concept notes\n` +
+      `• All budget lines\n` +
+      `• All staff assignments\n` +
+      `• All AI suggestions and audit logs\n\n` +
+      `Type "DELETE" to confirm:`;
+
+    const userInput = prompt(warningMessage);
+    
+    if (userInput !== 'DELETE') {
+      if (userInput !== null) {
+        alert('Deletion cancelled. You must type "DELETE" to confirm.');
+      }
       return;
     }
 
@@ -64,6 +85,7 @@ export default function CampaignsPage({}: CampaignsPageProps) {
     try {
       await deleteCampaign(id);
       setCampaigns(campaigns.filter(c => c.id !== id));
+      alert(`Campaign "${campaign.title}" has been successfully deleted.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error deleting campaign');
     } finally {

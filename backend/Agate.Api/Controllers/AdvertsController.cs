@@ -125,7 +125,7 @@ public class AdvertsController : ControllerBase
     }
 
     /// <summary>
-    /// Delete an advert
+    /// Delete an advert - also deletes related budget lines
     /// </summary>
     [HttpDelete("{id}")]
     public async Task<ActionResult> DeleteAdvert(Guid id)
@@ -136,14 +136,30 @@ public class AdvertsController : ControllerBase
             
             if (!deleted)
             {
-                return NotFound(new { error = "Advert not found" });
+                return NotFound(new { message = "Advert not found" });
             }
 
             return NoContent();
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { error = ex.Message });
+            // Detaylı hata loglama
+            Console.WriteLine($"Error deleting advert {id}: {ex.Message}");
+            
+            var innerEx = ex.InnerException;
+            var innerMessages = new List<string>();
+            while (innerEx != null)
+            {
+                innerMessages.Add(innerEx.Message);
+                Console.WriteLine($"Inner exception: {innerEx.Message}");
+                innerEx = innerEx.InnerException;
+            }
+            
+            return StatusCode(500, new { 
+                message = "An error occurred while deleting the advert", 
+                details = ex.Message,
+                innerExceptions = innerMessages
+            });
         }
     }
 }

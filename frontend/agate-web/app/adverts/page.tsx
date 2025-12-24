@@ -87,6 +87,11 @@ export default function AdvertsPage() {
       throw new Error(`API call failed: ${response.statusText} - ${errorText}`);
     }
 
+    // DELETE request genellikle 204 No Content dönüyor - boş response
+    if (response.status === 204 || options.method === 'DELETE') {
+      return null;
+    }
+
     return response.json();
   };
 
@@ -196,14 +201,40 @@ export default function AdvertsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this advert?')) return;
+    // İlgili advert'i bul
+    const advert = adverts.find(a => a.id === id);
+    if (!advert) return;
+
+    // Detaylı uyarı mesajı
+    const warningMessage = `Are you sure you want to delete "${advert.title}"?\n\n` +
+      `⚠️ WARNING: This action cannot be undone!\n\n` +
+      `This will permanently delete:\n` +
+      `• The advert\n` +
+      `• All related budget lines\n\n` +
+      `Type "DELETE" to confirm:`;
+
+    const userInput = prompt(warningMessage);
+    
+    if (userInput !== 'DELETE') {
+      if (userInput !== null) {
+        alert('Deletion cancelled. You must type "DELETE" to confirm.');
+      }
+      return;
+    }
 
     try {
       await apiCall(`/api/adverts/${id}`, { method: 'DELETE' });
       await loadAdverts();
+      alert(`Advert "${advert.title}" has been successfully deleted.`);
     } catch (error) {
       console.error('Error deleting advert:', error);
-      alert('Error deleting advert');
+      
+      let errorMessage = 'Error deleting advert';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      alert(`Failed to delete advert: ${errorMessage}`);
     }
   };
 

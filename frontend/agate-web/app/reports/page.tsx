@@ -260,13 +260,13 @@ export default function ReportsPage() {
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <span className="text-sm text-gray-600">Budget Utilization:</span>
-                            <span className="ml-2 font-semibold">
+                            <span className="ml-2 font-semibold text-gray-700">
                               {campaignSuggestionResult.performanceAnalysis.budgetUtilization.toFixed(1)}%
                             </span>
                           </div>
                           <div>
                             <span className="text-sm text-gray-600">Advert Completion Rate:</span>
-                            <span className="ml-2 font-semibold">
+                            <span className="ml-2 font-semibold text-gray-700">
                               {campaignSuggestionResult.performanceAnalysis.advertCompletionRate}%
                             </span>
                           </div>

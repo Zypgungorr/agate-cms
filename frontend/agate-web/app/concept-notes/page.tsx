@@ -36,6 +36,7 @@ export default function ConceptNotesPage() {
   const [selectedCampaign, setSelectedCampaign] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedNote, setSelectedNote] = useState<ConceptNote | null>(null);
 
   const statuses = [
     { key: 'Ideas', label: 'Ideas', color: 'bg-blue-50 border-blue-200', textColor: 'text-blue-800' },
@@ -220,6 +221,7 @@ export default function ConceptNotesPage() {
                   priorityLabels={priorityLabels}
                   statuses={statuses}
                   onStatusChange={handleStatusChange}
+                  onNoteClick={() => setSelectedNote(note)}
                 />
               ))}
 
@@ -255,6 +257,14 @@ export default function ConceptNotesPage() {
           onSuccess={loadData}
         />
       )}
+
+      {/* View Note Modal */}
+      {selectedNote && (
+        <ViewNoteModal
+          note={selectedNote}
+          onClose={() => setSelectedNote(null)}
+        />
+      )}
         </div>
       </div>
     </DndProvider>
@@ -268,9 +278,10 @@ interface ConceptNoteCardProps {
   priorityLabels: any;
   statuses: any[];
   onStatusChange: (noteId: string, newStatus: string) => void;
+  onNoteClick: () => void;
 }
 
-function ConceptNoteCard({ note, priorityColors, priorityLabels, statuses, onStatusChange }: ConceptNoteCardProps) {
+function ConceptNoteCard({ note, priorityColors, priorityLabels, statuses, onStatusChange, onNoteClick }: ConceptNoteCardProps) {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: ItemType,
     item: { id: note.id, currentStatus: note.status },
@@ -282,7 +293,8 @@ function ConceptNoteCard({ note, priorityColors, priorityLabels, statuses, onSta
   return (
     <div
       ref={drag as any}
-      className={`bg-white rounded-lg p-4 shadow-md hover:shadow-lg transition-shadow cursor-move border border-gray-200 ${
+      onClick={onNoteClick}
+      className={`bg-white rounded-lg p-4 shadow-md hover:shadow-lg transition-shadow cursor-pointer border border-gray-200 ${
         isDragging ? 'opacity-50 rotate-3 scale-105' : ''
       }`}
     >
@@ -552,6 +564,140 @@ function CreateConceptNoteModal({ campaigns, onClose, onSuccess }: {
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+}
+
+// View Note Modal Component
+interface ViewNoteModalProps {
+  note: ConceptNote;
+  onClose: () => void;
+}
+
+function ViewNoteModal({ note, onClose }: ViewNoteModalProps) {
+  const priorityColors = {
+    1: 'text-green-600 bg-green-50',
+    2: 'text-yellow-600 bg-yellow-50',
+    3: 'text-red-600 bg-red-50'
+  };
+
+  const priorityLabels = {
+    1: 'Low Priority',
+    2: 'Medium Priority', 
+    3: 'High Priority'
+  };
+
+  const statusLabels = {
+    'Ideas': 'Ideas',
+    'InReview': 'In Review',
+    'Approved': 'Approved',
+    'Archived': 'Archived'
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-start">
+          <div className="flex-1">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              {note.title}
+            </h2>
+            <div className="flex items-center gap-3 text-sm text-gray-600">
+              <span className="font-medium">{note.campaignName}</span>
+              <span>•</span>
+              <span>by {note.authorName}</span>
+              <span>•</span>
+              <span>{new Date(note.createdAt).toLocaleDateString()}</span>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors ml-4"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="px-6 py-6 space-y-6">
+          {/* Status and Priority */}
+          <div className="flex gap-3">
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+              {statusLabels[note.status as keyof typeof statusLabels]}
+            </span>
+            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${priorityColors[note.priority as keyof typeof priorityColors]}`}>
+              {priorityLabels[note.priority as keyof typeof priorityLabels]}
+            </span>
+            {note.isShared && (
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
+                Shared
+              </span>
+            )}
+          </div>
+
+          {/* Tags */}
+          {note.tags && note.tags.length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold text-gray-700 mb-2">Tags</h3>
+              <div className="flex flex-wrap gap-2">
+                {note.tags.map((tag, index) => (
+                  <span
+                    key={index}
+                    className="bg-blue-50 text-blue-700 text-sm px-3 py-1 rounded-full border border-blue-200"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Content */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">Content</h3>
+            <div className="bg-white rounded-lg p-4 border border-gray-300 min-h-[200px]">
+              {note.content ? (
+                <p className="text-gray-900 whitespace-pre-wrap leading-relaxed">
+                  {note.content}
+                </p>
+              ) : (
+                <p className="text-gray-400 italic">No content available</p>
+              )}
+            </div>
+          </div>
+
+          {/* Metadata */}
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="text-gray-500">Created:</span>
+                <span className="ml-2 text-gray-900 font-medium">
+                  {new Date(note.createdAt).toLocaleString()}
+                </span>
+              </div>
+              <div>
+                <span className="text-gray-500">Updated:</span>
+                <span className="ml-2 text-gray-900 font-medium">
+                  {new Date(note.updatedAt).toLocaleString()}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4">
+          <button
+            onClick={onClose}
+            className="w-full px-6 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition-colors"
+          >
+            Close
+          </button>
+        </div>
       </div>
     </div>
   );

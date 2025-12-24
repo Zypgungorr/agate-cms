@@ -32,7 +32,7 @@ public class CampaignService : ICampaignService
         }
 
         var campaigns = await query
-            .OrderByDescending(c => c.UpdatedAt)
+            .OrderBy(c => c.StartDate)
             .Select(c => new CampaignListDto
             {
                 Id = c.Id,
@@ -42,8 +42,13 @@ public class CampaignService : ICampaignService
                 StartDate = c.StartDate,
                 EndDate = c.EndDate,
                 EstimatedBudget = c.EstimatedBudget,
-                ActualCost = c.ActualCost,
+                // ActualCost'u sadece "Actual" tipindeki budget_lines'dan hesapla
+                ActualCost = _context.BudgetLines
+                    .Where(bl => bl.CampaignId == c.Id && bl.Type == "Actual")
+                    .Sum(bl => (decimal?)bl.Amount) ?? 0,
                 TotalAdverts = c.Adverts.Count,
+                CompletedAdverts = c.Adverts.Count(a => a.Status == AdvertStatusValues.Completed),
+                ActiveAdverts = c.Adverts.Count(a => a.Status == AdvertStatusValues.InProgress || a.Status == AdvertStatusValues.Scheduled),
                 UpdatedAt = c.UpdatedAt
             })
             .ToListAsync();
@@ -61,6 +66,11 @@ public class CampaignService : ICampaignService
 
         if (campaign == null) return null;
 
+        // ActualCost'u sadece "Actual" tipindeki budget_lines'dan hesapla
+        var actualCost = await _context.BudgetLines
+            .Where(bl => bl.CampaignId == id && bl.Type == "Actual")
+            .SumAsync(bl => (decimal?)bl.Amount) ?? 0;
+
         return new CampaignDto
         {
             Id = campaign.Id,
@@ -72,7 +82,7 @@ public class CampaignService : ICampaignService
             StartDate = campaign.StartDate,
             EndDate = campaign.EndDate,
             EstimatedBudget = campaign.EstimatedBudget,
-            ActualCost = campaign.ActualCost,
+            ActualCost = actualCost,
             CreatedByName = campaign.Creator?.FullName,
             CreatedAt = campaign.CreatedAt,
             UpdatedAt = campaign.UpdatedAt,
@@ -145,14 +155,78 @@ public class CampaignService : ICampaignService
         return await GetCampaignByIdAsync(id);
     }
 
+    // Kampanya silme işlemi - ilişkili tüm kayıtları da siler
+    // Related entities: AiAuditLogs, AiSuggestions, BudgetLines, ConceptNotes, Adverts, CampaignStaff
     public async Task<bool> DeleteCampaignAsync(Guid id)
     {
-        var campaign = await _context.Campaigns.FindAsync(id);
-        if (campaign == null) return false;
+        // Transaction kullanarak tüm işlemleri güvenli şekilde yap
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        
+        try
+        {
+            // Kampanya var mı kontrol et
+            var campaignExists = await _context.Campaigns.AnyAsync(c => c.Id == id);
+            if (!campaignExists)
+            {
+                await transaction.RollbackAsync();
+                return false;
+            }
 
-        _context.Campaigns.Remove(campaign);
-        await _context.SaveChangesAsync();
-        return true;
+            Console.WriteLine($"Starting deletion of campaign {id}");
+
+            // İlişkili kayıtları manuel olarak sil - doğru sırada
+            
+            // 1. AI Audit Logs'ları sil (başka tabloya bağlı değil)
+            var aiAuditLogsCount = await _context.Database
+                .ExecuteSqlRawAsync("DELETE FROM ai_audit_logs WHERE campaign_id = {0}", id);
+            Console.WriteLine($"Deleted {aiAuditLogsCount} AI audit logs");
+            
+            // 2. AI Suggestions'ları sil (başka tabloya bağlı değil)
+            var aiSuggestionsCount = await _context.Database
+                .ExecuteSqlRawAsync("DELETE FROM ai_suggestions WHERE campaign_id = {0}", id);
+            Console.WriteLine($"Deleted {aiSuggestionsCount} AI suggestions");
+            
+            // 3. Budget line'ları sil (hem campaign hem advert'e bağlı olabilir)
+            var budgetLinesCount = await _context.Database
+                .ExecuteSqlRawAsync("DELETE FROM budget_lines WHERE campaign_id = {0}", id);
+            Console.WriteLine($"Deleted {budgetLinesCount} budget lines");
+            
+            // 4. Concept note'ları sil
+            var conceptNotesCount = await _context.Database
+                .ExecuteSqlRawAsync("DELETE FROM concept_notes WHERE campaign_id = {0}", id);
+            Console.WriteLine($"Deleted {conceptNotesCount} concept notes");
+            
+            // 5. Advert'leri sil (önce bağlı budget_lines'lar silinmeli - yukarda silindi)
+            var advertsCount = await _context.Database
+                .ExecuteSqlRawAsync("DELETE FROM adverts WHERE campaign_id = {0}", id);
+            Console.WriteLine($"Deleted {advertsCount} adverts");
+            
+            // 6. Campaign staff atamaları sil
+            var campaignStaffCount = await _context.Database
+                .ExecuteSqlRawAsync("DELETE FROM campaign_staff WHERE campaign_id = {0}", id);
+            Console.WriteLine($"Deleted {campaignStaffCount} campaign staff assignments");
+            
+            // 7. Son olarak kampanyayı sil
+            var campaignCount = await _context.Database
+                .ExecuteSqlRawAsync("DELETE FROM campaigns WHERE id = {0}", id);
+            Console.WriteLine($"Deleted campaign {id}");
+            
+            // Transaction'ı commit et
+            await transaction.CommitAsync();
+            
+            Console.WriteLine($"Successfully deleted campaign {id} with all related records");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            // Hata durumunda rollback yap
+            await transaction.RollbackAsync();
+            
+            Console.WriteLine($"Error in DeleteCampaignAsync: {ex.Message}");
+            Console.WriteLine($"Inner exception: {ex.InnerException?.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            throw;
+        }
     }
 
     public async Task<IEnumerable<CampaignListDto>> GetCampaignsByClientAsync(Guid clientId)

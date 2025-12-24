@@ -54,6 +54,7 @@ export default function BudgetPage() {
   const [budgetLines, setBudgetLines] = useState<BudgetLine[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingBudgetLine, setEditingBudgetLine] = useState<BudgetLine | null>(null);
 
   const categories = [
     { key: 'Creative', label: 'Creative', color: 'bg-purple-100 text-purple-800' },
@@ -167,6 +168,56 @@ export default function BudgetPage() {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
+  };
+
+  // Handle edit budget line
+  const handleEdit = (budgetLine: BudgetLine) => {
+    setEditingBudgetLine(budgetLine);
+    setShowCreateModal(true);
+  };
+
+  // Handle delete budget line
+  const handleDelete = async (budgetLine: BudgetLine) => {
+    const warningMessage = `Are you sure you want to delete this budget item?\n\n` +
+      `Item: ${budgetLine.item}\n` +
+      `Amount: ${formatCurrency(budgetLine.amount)}\n` +
+      `Category: ${budgetLine.category}\n\n` +
+      `⚠️ This action cannot be undone!\n\n` +
+      `Type "DELETE" to confirm:`;
+
+    const userInput = prompt(warningMessage);
+    
+    if (userInput !== 'DELETE') {
+      if (userInput !== null) {
+        alert('Deletion cancelled. You must type "DELETE" to confirm.');
+      }
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:5135/api/budget/${budgetLine.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (response.ok) {
+        alert(`Budget item "${budgetLine.item}" has been successfully deleted.`);
+        await loadBudgetData();
+      } else {
+        const errorText = await response.text();
+        throw new Error(`Failed to delete: ${errorText}`);
+      }
+    } catch (error) {
+      console.error('Error deleting budget line:', error);
+      alert(`Failed to delete budget item: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setShowCreateModal(false);
+    setEditingBudgetLine(null);
   };
 
   if (loading) {
@@ -307,11 +358,11 @@ export default function BudgetPage() {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Planned:</span>
-                      <span className="font-medium">{formatCurrency(category.plannedAmount)}</span>
+                      <span className="font-medium text-gray-600">{formatCurrency(category.plannedAmount)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Actual:</span>
-                      <span className="font-medium">{formatCurrency(category.actualAmount)}</span>
+                      <span className="font-medium text-gray-600">{formatCurrency(category.actualAmount)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Variance:</span>
@@ -350,6 +401,7 @@ export default function BudgetPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendor</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -380,6 +432,20 @@ export default function BudgetPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {new Date(transaction.bookedAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button
+                          onClick={() => handleEdit(transaction)}
+                          className="text-indigo-600 hover:text-indigo-900 mr-4"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(transaction)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          Delete
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -415,12 +481,13 @@ export default function BudgetPage() {
         </div>
       )}
 
-      {/* Create Budget Item Modal */}
+      {/* Create/Edit Budget Item Modal */}
       {showCreateModal && (
         <CreateBudgetItemModal
           campaignId={selectedCampaign}
           categories={categories}
-          onClose={() => setShowCreateModal(false)}
+          editingBudgetLine={editingBudgetLine}
+          onClose={handleCloseModal}
           onSuccess={loadBudgetData}
         />
       )}
@@ -429,27 +496,30 @@ export default function BudgetPage() {
   );
 }
 
-// Create Budget Item Modal Component
-function CreateBudgetItemModal({ campaignId, categories, onClose, onSuccess }: {
+// Create/Edit Budget Item Modal Component
+function CreateBudgetItemModal({ campaignId, categories, editingBudgetLine, onClose, onSuccess }: {
   campaignId: string;
   categories: any[];
+  editingBudgetLine: BudgetLine | null;
   onClose: () => void;
   onSuccess: () => void;
 }) {
   const [formData, setFormData] = useState({
-    item: '',
-    category: 'Other',
-    type: 'Planned',
-    amount: 0,
-    plannedAmount: 0,
-    description: '',
-    vendor: '',
-    bookedAt: new Date().toISOString().split('T')[0],
-    advertId: ''
+    item: editingBudgetLine?.item || '',
+    category: editingBudgetLine?.category || 'Other',
+    type: editingBudgetLine?.type || 'Planned',
+    amount: editingBudgetLine?.amount || 0,
+    plannedAmount: editingBudgetLine?.plannedAmount || 0,
+    description: editingBudgetLine?.description || '',
+    vendor: editingBudgetLine?.vendor || '',
+    bookedAt: editingBudgetLine?.bookedAt?.split('T')[0] || new Date().toISOString().split('T')[0],
+    advertId: editingBudgetLine?.advertId || ''
   });
   const [adverts, setAdverts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [advertsLoading, setAdvertsLoading] = useState(true);
+
+  const isEditMode = !!editingBudgetLine;
 
   // Load adverts for the selected campaign
   useEffect(() => {
@@ -484,23 +554,105 @@ function CreateBudgetItemModal({ campaignId, categories, onClose, onSuccess }: {
     }
   }, [campaignId]);
 
+  // Type veya Advert değiştiğinde otomatik planned amount yükle
+  useEffect(() => {
+    console.log('Form data changed - Type:', formData.type, 'Advert:', formData.advertId);
+    
+    if (formData.type === 'Actual' && formData.advertId) {
+      console.log('Auto-loading planned amount...');
+      fetchPlannedAmount(formData.advertId);
+    }
+  }, [formData.type, formData.advertId]);
+
+  // Advert seçildiğinde planned amount'u getir
+  const handleAdvertChange = async (advertId: string) => {
+    console.log('Advert changed to:', advertId);
+    setFormData({...formData, advertId});
+  };
+
+  // Type değiştiğinde planned amount'u yükle
+  const handleTypeChange = async (type: string) => {
+    console.log('Type changed to:', type);
+    setFormData({...formData, type});
+    
+    if (type === 'Planned') {
+      // Planned seçilirse plannedAmount'u sıfırla
+      setFormData(prev => ({...prev, type, plannedAmount: 0}));
+    }
+  };
+
+  // Planned amount'u API'den çek
+  const fetchPlannedAmount = async (advertId: string) => {
+    try {
+      console.log('Fetching planned amount for advert:', advertId);
+      const response = await fetch(`http://localhost:5135/api/budget/advert/${advertId}/planned`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      console.log('Response status:', response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Planned amount data received:', data);
+        
+        // Planned amount'u form'a set et (0 olsa bile)
+        setFormData(prev => ({...prev, plannedAmount: data.plannedAmount || 0}));
+        
+        if (data.plannedAmount > 0) {
+          console.log(`✓ Loaded planned amount: $${data.plannedAmount}`);
+        } else {
+          console.log('No planned budget found for this advert');
+        }
+      } else {
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+      }
+    } catch (error) {
+      console.error('Error fetching planned amount:', error);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5135/api/budget', {
-        method: 'POST',
+      const url = isEditMode 
+        ? `http://localhost:5135/api/budget/${editingBudgetLine.id}`
+        : 'http://localhost:5135/api/budget';
+      
+      const method = isEditMode ? 'PUT' : 'POST';
+      
+      const payload = isEditMode
+        ? {
+            // Update payload (no campaignId)
+            item: formData.item,
+            category: formData.category,
+            type: formData.type,
+            amount: formData.amount,
+            plannedAmount: formData.plannedAmount,
+            description: formData.description,
+            vendor: formData.vendor,
+            bookedAt: formData.bookedAt,
+            advertId: formData.advertId || null
+          }
+        : {
+            // Create payload (with campaignId)
+            ...formData,
+            campaignId,
+            advertId: formData.advertId || null,
+            bookedAt: formData.bookedAt
+          };
+
+      const response = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: JSON.stringify({
-          ...formData,
-          campaignId,
-          advertId: formData.advertId || null,
-          bookedAt: formData.bookedAt
-        })
+        body: JSON.stringify(payload)
       });
 
       if (response.ok) {
@@ -508,11 +660,11 @@ function CreateBudgetItemModal({ campaignId, categories, onClose, onSuccess }: {
         onClose();
       } else {
         const error = await response.json();
-        alert(error.error || 'Failed to create budget item');
+        alert(error.error || `Failed to ${isEditMode ? 'update' : 'create'} budget item`);
       }
     } catch (error) {
-      console.error('Error creating budget item:', error);
-      alert('Error creating budget item');
+      console.error(`Error ${isEditMode ? 'updating' : 'creating'} budget item:`, error);
+      alert(`Error ${isEditMode ? 'updating' : 'creating'} budget item`);
     } finally {
       setLoading(false);
     }
@@ -522,7 +674,9 @@ function CreateBudgetItemModal({ campaignId, categories, onClose, onSuccess }: {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Add Budget Item</h2>
+          <h2 className="text-xl font-semibold text-gray-900">
+            {isEditMode ? 'Edit Budget Item' : 'Add Budget Item'}
+          </h2>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
@@ -566,7 +720,7 @@ function CreateBudgetItemModal({ campaignId, categories, onClose, onSuccess }: {
               ) : (
                 <select
                   value={formData.advertId}
-                  onChange={(e) => setFormData({...formData, advertId: e.target.value})}
+                  onChange={(e) => handleAdvertChange(e.target.value)}
                   className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 >
                   <option value="">No specific advert (General campaign expense)</option>
@@ -578,7 +732,7 @@ function CreateBudgetItemModal({ campaignId, categories, onClose, onSuccess }: {
                 </select>
               )}
               <p className="text-xs text-gray-500 mt-1">
-                Select an advert if this budget item is specifically for that advert
+                Select an advert if this budget item is specifically for that advert. If you select "Actual Expense" type, the planned amount will be automatically loaded.
               </p>
             </div>
           </div>
@@ -588,7 +742,7 @@ function CreateBudgetItemModal({ campaignId, categories, onClose, onSuccess }: {
               <label className="block text-sm font-medium text-gray-700 mb-2">Type *</label>
               <select
                 value={formData.type}
-                onChange={(e) => setFormData({...formData, type: e.target.value})}
+                onChange={(e) => handleTypeChange(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
               >
                 <option value="Planned">Planned Budget</option>
@@ -613,30 +767,50 @@ function CreateBudgetItemModal({ campaignId, categories, onClose, onSuccess }: {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 {formData.type === 'Planned' ? 'Planned Amount' : 'Actual Amount'} *
               </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                required
-                value={formData.amount}
-                onChange={(e) => setFormData({...formData, amount: parseFloat(e.target.value) || 0})}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-600"
-                placeholder="0.00"
-              />
-            </div>
-
-            {formData.type === 'Actual' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Planned Amount (for comparison)</label>
+              <div className="relative">
+                <span className="absolute left-3 top-3 text-gray-500">$</span>
                 <input
                   type="number"
                   step="0.01"
                   min="0"
-                  value={formData.plannedAmount}
-                  onChange={(e) => setFormData({...formData, plannedAmount: parseFloat(e.target.value) || 0})}
-                  className="w-full border text-black border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                  value={formData.amount}
+                  onChange={(e) => setFormData({...formData, amount: parseFloat(e.target.value) || 0})}
+                  className="w-full border border-gray-300 rounded-lg pl-8 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-600"
                   placeholder="0.00"
                 />
+              </div>
+            </div>
+
+            {formData.type === 'Actual' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Planned Amount (for comparison)
+                  {formData.plannedAmount > 0 && (
+                    <span className="ml-2 text-xs text-green-600 font-normal">
+                      ✓ Automatically loaded from advert budget
+                    </span>
+                  )}
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-3 text-gray-500">$</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.plannedAmount}
+                    onChange={(e) => setFormData({...formData, plannedAmount: parseFloat(e.target.value) || 0})}
+                    className={`w-full border text-black rounded-lg pl-8 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      formData.plannedAmount > 0 ? 'border-green-300 bg-green-50' : 'border-gray-300'
+                    }`}
+                    placeholder="0.00"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  {formData.plannedAmount > 0 
+                    ? `Budget variance: ${formData.amount > formData.plannedAmount ? 'Over' : 'Under'} budget by $${Math.abs(formData.amount - formData.plannedAmount).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`
+                    : 'Select an advert to automatically load the planned amount'}
+                </p>
               </div>
             )}
           </div>
@@ -676,7 +850,9 @@ function CreateBudgetItemModal({ campaignId, categories, onClose, onSuccess }: {
               disabled={loading}
               className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
             >
-              {loading ? 'Adding...' : 'Add Budget Item'}
+              {loading 
+                ? (isEditMode ? 'Updating...' : 'Adding...') 
+                : (isEditMode ? 'Update Budget Item' : 'Add Budget Item')}
             </button>
           </div>
         </form>

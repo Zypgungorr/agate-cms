@@ -253,6 +253,20 @@ public class BudgetService : IBudgetService
         return true;
     }
 
+    // Bir advert için toplam planned budget'ı getir
+    public async Task<decimal> GetPlannedAmountForAdvertAsync(Guid advertId)
+    {
+        Console.WriteLine($"Getting planned amount for advert: {advertId}");
+        
+        var plannedTotal = await _context.BudgetLines
+            .Where(bl => bl.AdvertId == advertId && bl.Type == "Planned")
+            .SumAsync(bl => bl.Amount);
+
+        Console.WriteLine($"Found planned amount: ${plannedTotal}");
+        
+        return plannedTotal;
+    }
+
     public async Task<BudgetSummaryDto?> GetBudgetSummaryAsync(Guid campaignId)
     {
         var campaign = await _context.Campaigns.FindAsync(campaignId);

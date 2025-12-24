@@ -104,7 +104,34 @@ async function apiRequest(endpoint: string, options: RequestInit = {}) {
   const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
 
   if (!response.ok) {
-    throw new Error(`API Error: ${response.status} ${response.statusText}`);
+    // Hata detaylarını almaya çalış
+    let errorMessage = `API Error: ${response.status} ${response.statusText}`;
+    try {
+      const errorData = await response.json();
+      if (errorData.message) {
+        errorMessage += ` - ${errorData.message}`;
+      }
+      if (errorData.details) {
+        errorMessage += ` (${errorData.details})`;
+      }
+      console.error('API Error Details:', errorData);
+    } catch (e) {
+      // JSON parse hatası varsa text olarak oku
+      try {
+        const errorText = await response.text();
+        if (errorText) {
+          errorMessage += ` - ${errorText}`;
+        }
+      } catch (textError) {
+        // Ignore
+      }
+    }
+    throw new Error(errorMessage);
+  }
+
+  // DELETE request için boş response olabilir
+  if (response.status === 204 || options.method === 'DELETE') {
+    return null;
   }
 
   return response.json();
